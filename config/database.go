@@ -1,49 +1,42 @@
 package config
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"os"
-	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
-var DB *pgxpool.Pool
+var DB *gorm.DB
 
-func ConnectDB() {
+func ConnectDB() *gorm.DB {
 	dsn := fmt.Sprintf(
-		"postgres://%s:%s@%s:%s/%s",
+		"host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
+		os.Getenv("DB_HOST"),
 		os.Getenv("DB_USER"),
 		os.Getenv("DB_PASSWORD"),
-		os.Getenv("DB_HOST"),
-		os.Getenv("DB_PORT"),
 		os.Getenv("DB_NAME"),
+		os.Getenv("DB_PORT"),
 	)
 
-	cfg, err := pgxpool.ParseConfig(dsn)
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		log.Fatal("parse DSN error:", err)
-	}
-	// optional: tune pool
-	cfg.MaxConns = 5
-	cfg.MinConns = 0
-	cfg.MaxConnLifetime = time.Hour
-
-	DB, err = pgxpool.NewWithConfig(context.Background(), cfg)
-	if err != nil {
-		log.Fatal("connect pool error:", err)
+		log.Fatal("Failed to connect to database:", err)
 	}
 
-	if err := DB.Ping(context.Background()); err != nil {
-		log.Fatal("db ping error:", err)
-	}
-	log.Println("✅ PostgreSQL connected")
+	DB = db
+	log.Println("✅ PostgreSQL connected with GORM")
+	return db
 }
 
 func CloseDB() {
-	if DB != nil {
-		DB.Close()
+	sqlDB, err := DB.DB()
+	if err != nil {
+		log.Println("Failed to get sqlDB:", err)
+		return
 	}
+	sqlDB.Close()
+	log.Println("🛑 PostgreSQL disconnected")
 }

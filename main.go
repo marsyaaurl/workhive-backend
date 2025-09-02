@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"log"
 	"os"
 
@@ -9,30 +8,41 @@ import (
 	"github.com/joho/godotenv"
 
 	"github.com/marsyaaurl/workhive-backend/config"
+	"github.com/marsyaaurl/workhive-backend/controller"
+	"github.com/marsyaaurl/workhive-backend/middleware"
+	"github.com/marsyaaurl/workhive-backend/repository"
+	"github.com/marsyaaurl/workhive-backend/service"
 )
 
 func main() {
 	_ = godotenv.Load()
 
-	config.ConnectDB()
+	db := config.ConnectDB()
 	defer config.CloseDB()
 
 	app := fiber.New()
 
-	// health check server
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.SendString("WorkHive API up 🚀")
 	})
 
-	// health check DB (query ringan)
-	app.Get("/health/db", func(c *fiber.Ctx) error {
-		var one int
-		err := config.DB.QueryRow(context.Background(), "SELECT 1").Scan(&one)
-		if err != nil {
-			return c.Status(500).JSON(fiber.Map{"ok": false, "error": err.Error()})
-		}
-		return c.JSON(fiber.Map{"ok": true, "db": one})
+	employeeRepo := repository.NewEmployeeRepository(db)
+	authService := service.NewAuthService(employeeRepo)
+	authController := controller.NewAuthController(authService)
+
+	// public routes
+	app.Post("/signup", authController.Signup)
+	app.Post("/login", authController.Login)
+
+	// protected routes
+	app.Get("/profile", middleware.JWTProtected(), func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{"message": "Welcome to your profile!"})
 	})
 
-	log.Fatal(app.Listen(":" + os.Getenv("APP_PORT")))
+	port := os.Getenv("APP_PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	log.Fatal(app.Listen(":" + port))
 }
