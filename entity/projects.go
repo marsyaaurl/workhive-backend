@@ -11,7 +11,7 @@ type Project struct {
 	ProjectOwner string    `db:"project_owner" json:"project_owner"` // FK ke employees
 	Status       string    `db:"status" json:"status"`
 	Priority     string    `db:"priority" json:"priority"`
-	Deadline     time.Time `db:"deadline" json:"deadline"`   // DATE di DB
+	Deadline     string    `db:"deadline" json:"deadline"`   // DATE di DB
 	AssignTo     string    `db:"assign_to" json:"assign_to"` // FK ke employees
 	CreatedAt    time.Time `db:"created_at" json:"created_at"`
 }

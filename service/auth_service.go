@@ -35,6 +35,7 @@ func (service *authServiceImpl) Signup(req request.SignupRequest) (response.Empl
 		Email:      req.Email,
 		FullName:   req.FullName,
 		Password:   string(hashedPassword),
+		Role:       req.Role,
 	}
 
 	saved, err := service.employeeRepo.Save(employee)
@@ -46,6 +47,7 @@ func (service *authServiceImpl) Signup(req request.SignupRequest) (response.Empl
 		EmployeeID: saved.EmployeeID,
 		Email:      saved.Email,
 		FullName:   saved.FullName,
+		Role:       saved.Role,
 	}, nil
 }
 
@@ -72,6 +74,7 @@ func (service *authServiceImpl) Login(req request.LoginRequest) (response.Employ
 		EmployeeID: employee.EmployeeID,
 		Email:      employee.Email,
 		FullName:   employee.FullName,
+		Role:       employee.Role,
 		Token:      tokenString,
 	}, nil
 }
